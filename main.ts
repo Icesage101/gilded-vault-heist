@@ -9,7 +9,7 @@
 // Outside the grader, MAKEFUN_OUTPUT_DIR stands in for /output:
 //   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
 
-import { cpSync, existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildDossier } from './vendor/makefun-game.ts';
@@ -36,9 +36,14 @@ function copyEntry(sourceDir, targetDir) {
 }
 
 // Start from a clean output directory, so a stale file from an earlier run
-// can never ride along with the entry.
-rmSync(outputDir, { recursive: true, force: true });
+// can never ride along with the entry. Only the CONTENTS are cleared: the
+// grader mounts the output directory itself, and removing that mount point
+// fails (EBUSY) and kills the run with exit 1 — that was the dev-grade
+// failure on the first submission. The stealth entry never removed it.
 mkdirSync(outputDir, { recursive: true });
+for (const name of readdirSync(outputDir)) {
+  rmSync(join(outputDir, name), { recursive: true, force: true });
+}
 
 copyEntry(join(repoRoot, 'game'), join(outputDir, 'game'));
 if (existsSync(join(repoRoot, 'screenshots'))) {
