@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Gilded Vault — a top-down heist game</title>
+<link rel="icon" href="data:,">
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #0d0a08;
+    height: 100%;
+  }
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: Georgia, 'Times New Roman', serif;
+  }
+  #wrap {
+    text-align: center;
+  }
+  canvas {
+    display: block;
+    width: min(1152px, 96vw, calc((100vh - 44px) * 1.6));
+    height: auto;
+    image-rendering: auto;
+    box-shadow: 0 0 60px rgba(0, 0, 0, 0.8);
+    border: 1px solid #3a3128;
+  }
+  #help {
+    color: #8d7f68;
+    font-size: 13px;
+    margin-top: 10px;
+    font-family: sans-serif;
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="game" width="1152" height="720"></canvas>
+  <div id="help">WASD / arrows to move &middot; Shift to sneak &middot; click to walk &middot; 1 smoke, 2 EMP, 3 decoy &middot; P pause &middot; M mute &middot; R restart</div>
+</div>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
