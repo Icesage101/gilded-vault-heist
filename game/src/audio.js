@@ -63,10 +63,25 @@ export function playFootstep(bank) {
   noiseBurst(bank, 0.06, 0.08, 500);
 }
 
-// Two-note chime when loot is picked up.
-export function playPickup(bank) {
-  tone(bank, 880, 0.12, 'sine', 0.16);
-  tone(bank, 1318, 0.2, 'sine', 0.14, 0.09);
+// Two-note chime when loot is picked up. A running combo pitches the
+// chime up a step per link, so a streak sounds like it climbs.
+export function playPickup(bank, combo = 1) {
+  const lift = Math.pow(1.12, Math.min(combo - 1, 5));
+  tone(bank, 880 * lift, 0.12, 'sine', 0.16);
+  tone(bank, 1318 * lift, 0.2, 'sine', 0.14, 0.09);
+}
+
+// The tripwire's buzz: a harsh square blare, unmistakably not the beeps.
+export function playLaser(bank) {
+  tone(bank, 180, 0.3, 'square', 0.16, 0, 140);
+  tone(bank, 190, 0.3, 'square', 0.12, 0.05, 150);
+}
+
+// The cutter's snip: a tiny metallic click and a falling sparkle.
+export function playCut(bank) {
+  tone(bank, 2600, 0.05, 'triangle', 0.15);
+  tone(bank, 1750, 0.09, 'sine', 0.12, 0.06);
+  tone(bank, 1200, 0.12, 'sine', 0.1, 0.13);
 }
 
 // A low alarm beep; the engine calls it faster as the meter climbs.

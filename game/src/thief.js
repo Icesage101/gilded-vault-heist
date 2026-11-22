@@ -1,8 +1,10 @@
 // The Gilded Vault — the thief.
 // Wren, the thief, moves with the keys or a click, sneaks with Shift, and
-// carries three tools, each bought with score: smoke to blind a cone, an EMP
-// burst to kill the cameras, and a decoy coin to pull a guard away. Loot is
-// picked up by walking over it; the Star is the job, the rest is bonus.
+// carries four tools, each bought with score: smoke to blind a cone, an EMP
+// burst to kill the cameras, a decoy coin to pull a guard away, and a glass
+// cutter to snip a laser tripwire dead. Loot is picked up by walking over
+// it; the Star is the job, the rest is bonus. Loot lifted in quick
+// succession builds a combo that multiplies what each piece pays.
 
 import {
   THIEF_SPEED,
@@ -11,16 +13,20 @@ import {
   SMOKE_START_COUNT,
   EMP_START_COUNT,
   DECOY_START_COUNT,
+  CUTTER_START_COUNT,
   SMOKE_RADIUS,
   SMOKE_SECONDS,
   EMP_SECONDS,
   DECOY_THROW_RANGE,
+  CUTTER_RANGE,
   TOOL_SMOKE_COST,
   TOOL_EMP_COST,
   TOOL_DECOY_COST,
+  TOOL_CUTTER_COST,
   TILE,
 } from './config.js';
 import { isSolidTile, tileCenter, SPAWN_TILE } from './level.js';
+import { nearestLiveBeam } from './lasers.js';
 
 export function createThief() {
   const spawn = tileCenter(SPAWN_TILE.col, SPAWN_TILE.row);
@@ -37,11 +43,15 @@ export function createThief() {
       smoke: SMOKE_START_COUNT,
       emp: EMP_START_COUNT,
       decoy: DECOY_START_COUNT,
+      cutter: CUTTER_START_COUNT,
     },
     lootTaken: [], // kinds taken, in order
     hasStar: false,
     score: 0,
     spentOnTools: 0,
+    combo: 0, // current loot streak (0 = no streak running)
+    comboTimer: 0, // seconds left to keep the streak alive
+    bestCombo: 0, // the longest streak of the run, for the getaway screen
   };
 }
 
@@ -121,4 +131,18 @@ export function throwDecoy(thief, x, y) {
   thief.tools.decoy -= 1;
   thief.spentOnTools += TOOL_DECOY_COST;
   return { x, y, timer: 6 };
+}
+
+// Snip the nearest live laser beam with the glass cutter. The beam dies
+// for the rest of the job; returns the beam that was cut, or null when no
+// charge is left or no live beam is in reach.
+export function useCutter(thief, lasers) {
+  if (thief.tools.cutter <= 0) return null;
+  const beam = nearestLiveBeam(lasers, thief, CUTTER_RANGE);
+  if (!beam) return null;
+  thief.tools.cutter -= 1;
+  thief.spentOnTools += TOOL_CUTTER_COST;
+  beam.disabled = true;
+  beam.flashTimer = 0;
+  return beam;
 }

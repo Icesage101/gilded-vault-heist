@@ -27,7 +27,8 @@ function stageStart(game) {
 
 // Mid-heist: the thief is crossing the middle band with the Star in sight,
 // one guard's cone sweeping close by, a camera watching the cage approach,
-// one piece of side loot already lifted, the alarm a third full.
+// one piece of side loot already lifted, a combo running, the alarm a
+// third full, one laser already cut on the north crossing.
 function stagePlay(game) {
   game.state = 'playing';
   game.time = 47;
@@ -35,8 +36,12 @@ function stagePlay(game) {
   faceThiefAt(game, 12, 9);
   game.thief.score = 250;
   game.thief.lootTaken = ['gold'];
+  game.thief.combo = 2;
+  game.thief.comboTimer = 6;
+  game.thief.bestCombo = 2;
   game.loot.find((item) => item.kind === 'gold').taken = true;
   game.alarm.value = 34;
+  game.lasers[0].disabled = true; // the north crossing beam, already snipped
   const guard = game.guards[0];
   const guardAt = tileCenter(13, 3);
   guard.x = guardAt.x;
@@ -48,10 +53,11 @@ function stagePlay(game) {
   guard2.x = guard2At.x;
   guard2.y = guard2At.y;
   guard2.facing = Math.PI;
-  guard2.state = 'patrol';
+  guard2.state = 'suspicious';
+  guard2.suspicionTarget = { x: game.thief.x, y: game.thief.y };
   const camera = game.cameras[1];
   camera.facing = Math.PI * 0.85;
-  game.hint = 'Stay out of the red cones. Blue cones are cameras — watch them sweep.';
+  game.hint = 'Stay out of the red cones. Red beams are lasers: sneak (Shift) under them, or cut them with [4].';
 }
 
 // The alarm nearly tripping: the thief is caught inside a guard's cone, the
@@ -69,17 +75,21 @@ function stageAlarm(game) {
   game.thief.spentOnTools = 150;
   game.alarm.value = 82;
   game.alarm.warned = true;
+  game.alarm.peak = 82;
+  // The cage-exit beam has just been tripped and still burns hot.
+  const beam = game.lasers.find((b) => b.col === 15 && b.row === 9);
+  if (beam) beam.flashTimer = 0.85;
   // The vault guard stands two tiles east, facing the thief down the open
-  // cage row: the thief is genuinely inside its cone with a clear view.
+  // cage row, in full chase: the thief is genuinely inside its cone.
   const guard = game.guards[1];
   const guardAt = tileCenter(15, 9);
   guard.x = guardAt.x;
   guard.y = guardAt.y;
   guard.facing = Math.PI;
-  guard.state = 'investigate';
-  guard.investigateTarget = { x: game.thief.x, y: game.thief.y };
+  guard.state = 'chase';
+  guard.chaseTarget = { x: game.thief.x, y: game.thief.y };
   game.smokes.push({ x: game.thief.x - 90, y: game.thief.y, radius: 90, timer: 3.5 });
-  game.hint = 'SPOTTED! Break line of sight before the meter tops out.';
+  game.hint = 'SPOTTED! A guard is chasing you. Break line of sight before the meter tops out.';
 }
 
 // The getaway: the Star lifted, the thief at the van, score broken down.
@@ -97,8 +107,10 @@ function stageWin(game) {
   game.breakdown = {
     loot: 1450,
     timeBonus: 48,
+    ghost: 300,
+    bestCombo: 3,
     tools: 150,
-    total: 1348,
+    total: 1648,
     timeText: '02:22',
   };
   game.hint = 'Clean getaway. Press R to run it again.';

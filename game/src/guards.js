@@ -1,7 +1,13 @@
 // The Gilded Vault — patrolling guards and their vision cones.
 // A guard walks its waypoints, pauses to look around at each one, and turns
-// its cone toward whatever it is watching. When the alarm is high the nearest
-// guard leaves its patrol to investigate the last place the thief was seen.
+// its cone toward whatever it is watching. The guards think in states:
+//   patrol     — walk the waypoints, glance around at each stop
+//   suspicious — something caught its ear: stop, stare at the spot
+//   investigate — walk to a place worth checking (a decoy, a tripped beam,
+//                 the thief's last seen spot at high alarm)
+//   look       — arrived somewhere interesting; sweep the room, then patrol
+//   chase      — it can see the thief and the alarm is high: run them down.
+//                A chasing guard that gets hands on the thief ends the job.
 
 import {
   GUARD_SPEED,
@@ -9,6 +15,7 @@ import {
   GUARD_VIEW_RANGE,
   GUARD_VIEW_HALF_ANGLE,
   GUARD_LOOK_AROUND_SECONDS,
+  GUARD_CHASE_LOSE_SECONDS,
   TILE,
 } from './config.js';
 import { GUARD_PATROLS, blocksSight, tileCenter } from './level.js';
@@ -25,9 +32,13 @@ export function createGuards() {
       patrolDirection: 1,
       facing: 0,
       pauseTimer: 0,
-      state: 'patrol', // patrol | investigate | look
+      state: 'patrol', // patrol | suspicious | investigate | look | chase
       investigateTarget: null,
       lookTimer: 0,
+      suspicionTimer: 0,
+      suspicionTarget: null,
+      chaseTarget: null,
+      loseTimer: 0, // chase: seconds since the thief was last seen
       blindTimer: 0, // smoke: the guard cannot see at all
       speed: GUARD_SPEED,
     };
@@ -98,9 +109,76 @@ export function sendGuardToInvestigate(guards, x, y) {
   }
 }
 
-export function updateGuards(guards, dt) {
+// The nearest patrolling guard hears something: it stops where it is and
+// stares at the spot for a couple of seconds. It does not leave its post —
+// suspicion is a warning, not a hunt.
+export function sendGuardSuspicious(guards, x, y) {
+  let nearest = null;
+  let nearestDist = Infinity;
+  for (const guard of guards) {
+    if (guard.state !== 'patrol') continue;
+    const dist = Math.hypot(guard.x - x, guard.y - y);
+    if (dist < nearestDist) {
+      nearest = guard;
+      nearestDist = dist;
+    }
+  }
+  if (nearest) {
+    nearest.state = 'suspicious';
+    nearest.suspicionTimer = 2.2;
+    nearest.suspicionTarget = { x, y };
+  }
+}
+
+// Put a guard into chase on the thief's current position. Called by the
+// engine when a guard can see the thief and the alarm is already high.
+export function startChase(guard, thief) {
+  guard.state = 'chase';
+  guard.chaseTarget = { x: thief.x, y: thief.y };
+  guard.loseTimer = 0;
+}
+
+export function updateGuards(guards, dt, thief = null) {
   for (const guard of guards) {
     if (guard.blindTimer > 0) guard.blindTimer -= dt;
+
+    if (guard.state === 'chase' && guard.chaseTarget) {
+      // Refresh the target while the thief is visible; the trail goes
+      // cold after a few seconds out of sight and the guard gives up
+      // into a look around the last known spot.
+      if (thief && guardSeesThief(guard, thief)) {
+        guard.chaseTarget = { x: thief.x, y: thief.y };
+        guard.loseTimer = 0;
+      } else {
+        guard.loseTimer += dt;
+      }
+      if (guard.loseTimer > GUARD_CHASE_LOSE_SECONDS) {
+        guard.state = 'look';
+        guard.lookTimer = GUARD_LOOK_AROUND_SECONDS;
+        guard.chaseTarget = null;
+      } else {
+        moveToward(guard, guard.chaseTarget, GUARD_CHASE_SPEED, dt);
+      }
+      continue;
+    }
+
+    if (guard.state === 'suspicious' && guard.suspicionTarget) {
+      // Stand still and stare at the suspicious spot, cone locked on it.
+      guard.suspicionTimer -= dt;
+      const want = Math.atan2(
+        guard.suspicionTarget.y - guard.y,
+        guard.suspicionTarget.x - guard.x,
+      );
+      let turn = want - guard.facing;
+      while (turn > Math.PI) turn -= Math.PI * 2;
+      while (turn < -Math.PI) turn += Math.PI * 2;
+      guard.facing += turn * Math.min(1, dt * 6);
+      if (guard.suspicionTimer <= 0) {
+        guard.state = 'patrol';
+        guard.suspicionTarget = null;
+      }
+      continue;
+    }
 
     if (guard.state === 'investigate' && guard.investigateTarget) {
       const arrived = moveToward(guard, guard.investigateTarget, GUARD_CHASE_SPEED, dt);

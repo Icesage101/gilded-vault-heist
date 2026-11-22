@@ -28,6 +28,7 @@ const KEY_ACTIONS = {
   Digit1: 'smoke',
   Digit2: 'emp',
   Digit3: 'decoy',
+  Digit4: 'cutter',
   KeyP: 'pause',
   KeyM: 'mute',
   KeyR: 'restart',

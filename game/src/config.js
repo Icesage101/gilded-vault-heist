@@ -40,13 +40,37 @@ export const ALARM_GRACE_SECONDS = 1.2; // time to break sight after the meter t
 export const TOOL_SMOKE_COST = 150;
 export const TOOL_EMP_COST = 200;
 export const TOOL_DECOY_COST = 50;
+export const TOOL_CUTTER_COST = 120;
 export const SMOKE_START_COUNT = 2;
 export const EMP_START_COUNT = 2;
 export const DECOY_START_COUNT = 3;
+export const CUTTER_START_COUNT = 2;
 export const SMOKE_RADIUS = 140;
 export const SMOKE_SECONDS = 5;
 export const EMP_SECONDS = 8;
 export const DECOY_THROW_RANGE = 280;
+export const CUTTER_RANGE = 95; // px: how close the thief must be to a beam
+
+// Laser tripwires. Crossing a live beam while upright spikes the alarm and
+// sends a guard to look; sneaking (Shift) crawls under it safely, and the
+// glass cutter (key 4) kills a beam for good.
+export const LASER_ALARM_SPIKE = 38;
+export const LASER_COOLDOWN_SECONDS = 2.0;
+
+// Guard suspicion and chase. Crossing 35 on the meter makes the nearest
+// guard suspicious (it stops and stares); at 55 a guard that can see the
+// thief gives chase, and a chasing guard that reaches the thief busts them.
+export const ALARM_SUSPICION_AT = 35;
+export const ALARM_CHASE_AT = 55;
+export const GUARD_CHASE_LOSE_SECONDS = 2.5;
+export const GUARD_CATCH_DISTANCE = 27;
+
+// Combo scoring: loot lifted within the combo window of the previous lift
+// pays its value times the combo count. A run that never lets the meter
+// past 50 earns the ghost bonus at the getaway.
+export const COMBO_WINDOW_SECONDS = 8;
+export const GHOST_BONUS = 300;
+export const GHOST_ALARM_CAP = 50;
 
 // Loot values in dollars.
 export const LOOT_VALUES = {
@@ -54,6 +78,8 @@ export const LOOT_VALUES = {
   gold: 250, // gold bars
   ledger: 150, // the vault ledger
   emerald: 300, // the emerald tiara
+  crown: 350, // the crown jewels, north-east gallery
+  ruby: 275, // the ruby necklace, strongroom
 };
 
 // Time bonus at the getaway: 900 points, losing 6 a second.
@@ -80,4 +106,10 @@ export const COLORS = {
   alarmLow: '#e8b23a',
   alarmHigh: '#e5484d',
   smoke: 'rgba(200, 200, 200, 0.45)',
+  laser: '#ff3b30',
+  laserGlow: 'rgba(255, 59, 48, 0.55)',
+  marbleLight: '#35302a',
+  marbleDark: '#28231e',
+  carpet: 'rgba(122, 32, 38, 0.5)',
+  spotlight: 'rgba(255, 214, 120, 0.10)',
 };
